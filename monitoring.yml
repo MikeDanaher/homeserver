@@ -2,17 +2,18 @@ version: "3"
 
 services:
   prometheus:
-    image: prom/prometheus:v2.37.0
+    image: prom/prometheus:v2.41.0
     container_name: prometheus
-    restart: unless-stopped
+    restart: always
     user: ${PUID}:${PGID}
     ports:
       - "9090:9090"
     volumes:
       - ${DATADIR}/prometheus/etc:/etc/prometheus
       - ${DATADIR}/prometheus/data:/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
+    command: "--config.file=/etc/prometheus/prometheus.yml"
+    labels:
+      - 'wud.tag.include=^v\d+\.\d+\.\d+$$'
     logging:
       driver: loki
       options:
@@ -20,14 +21,15 @@ services:
         max-size: "10m"
 
   node_exporter:
-    image: prom/node-exporter
+    image: prom/node-exporter:v1.5.0
     container_name: node_exporter
-    command:
-      - '--path.rootfs=/host'
+    command: "--path.rootfs=/host"
     pid: host
-    restart: unless-stopped
+    restart: always
     volumes:
       - '/:/host:ro,rslave'
+    labels:
+      - 'wud.tag.include=^v\d+\.\d+\.\d+$$'
     logging:
       driver: loki
       options:
@@ -35,8 +37,7 @@ services:
         max-size: "10m"
 
   cadvisor:
-    #image: gcr.io/cadvisor/cadvisor
-    image: zcube/cadvisor:latest
+    image: zcube/cadvisor:v0.45.0
     container_name: cadvisor
     command:
       - "--docker_only=true"
@@ -51,7 +52,9 @@ services:
       - /etc/machine-id:/etc/machine-id:ro
     devices:
       - /dev/kmsg
-    restart: unless-stopped
+    restart: always
+    labels:
+      - 'wud.tag.include=^v\d+\.\d+\.\d+$$'
     logging:
       driver: loki
       options:
