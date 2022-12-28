@@ -53,38 +53,3 @@ services:
       options:
         loki-url: "http://localhost:3100/loki/api/v1/push"
         max-size: "200m"
-
-  whatsupdocker:
-    image: fmartinou/whats-up-docker:6.0.1
-    container_name: wud
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - 3001:3000
-    labels:
-      - 'wud.tag.include=^\d+\.\d+\.\d+$$'
-      - 'wud.link.template=https://github.com/fmartinou/whats-up-docker/releases/tag/$${major}.$${minor}.$${patch}'
-    logging:
-      driver: loki
-      options:
-        loki-url: "http://localhost:3100/loki/api/v1/push"
-        max-size: "200m"
-
-  loki:
-    container_name: loki
-    image: grafana/loki:main
-    restart: always
-    ports:
-      - 3100:3100
-    volumes:
-      - ${DATADIR}/loki/config/loki-config.yaml:/etc/loki/loki-config.yaml
-      - ${DATADIR}/loki/data:/data/loki
-    command: "-config.file=/etc/loki/loki-config.yaml"
-    labels:
-      - 'wud.tag.include=main'
-      - 'wud.watch.digest=true'
-    logging:
-      driver: loki
-      options:
-        loki-url: "http://localhost:3100/loki/api/v1/push"
-        max-size: "200m"
