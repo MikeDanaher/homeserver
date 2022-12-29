@@ -1,40 +1,29 @@
 version: "3"
 
 services:
-  whatsupdocker:
-    image: fmartinou/whats-up-docker:6.0.1
-    container_name: wud
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - 3001:3000
-    labels:
-      - 'wud.tag.include=^\d+\.\d+\.\d+$$'
-      - 'wud.link.template=https://github.com/fmartinou/whats-up-docker/releases/tag/$${major}.$${minor}.$${patch}'
-    logging:
-      driver: loki
-      options:
-        loki-url: "http://localhost:3100/loki/api/v1/push"
-        max-size: "200m"
-
-  loki:
-    container_name: loki
-    image: grafana/loki:main
+  grafana:
+    image: grafana/grafana:main-ubuntu
+    container_name: grafana
     restart: always
-    ports:
-      - 3100:3100
     volumes:
-      - ${DATADIR}/loki/config/loki-config.yaml:/etc/loki/loki-config.yaml
-      - ${DATADIR}/loki/data:/data/loki
-    command: "-config.file=/etc/loki/loki-config.yaml"
-    labels:
-      - 'wud.tag.include=main'
-      - 'wud.watch.digest=true'
+      - ${DATADIR}/grafana:/var/lib/grafana
+      - ${DATADIR}/loki/grafana/provisioning/:/etc/grafana/provisioning/
+    ports:
+      - 3000:3000
+    environment:
+      - TZ=${TZ}
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_SECURITY_ALLOW_EMBEDDING=true
     logging:
       driver: loki
       options:
         loki-url: "http://localhost:3100/loki/api/v1/push"
-        max-size: "200m"
+        max-size: "10m"
+    labels:
+      - 'wud.tag.include=main-ubuntu'
+      - 'wud.watch.digest=true'
 
   prometheus:
     image: prom/prometheus:v2.41.0
@@ -42,7 +31,7 @@ services:
     restart: always
     user: ${PUID}:${PGID}
     ports:
-      - "9090:9090"
+      - 9090:9090
     volumes:
       - ${DATADIR}/prometheus/etc:/etc/prometheus
       - ${DATADIR}/prometheus/data:/prometheus

@@ -6,8 +6,8 @@ services:
     image: adguard/adguardhome:v0.107.21
     restart: always 
     ports:
-      - "53:53/tcp"
-      - "53:53/udp"
+      - "10.0.0.12:53:53/tcp"
+      - "10.0.0.12:53:53/udp"
       - "443:443/tcp"
       - "853:853/tcp"
       - "784:784/udp"
@@ -33,7 +33,9 @@ services:
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
-      - MEM_LIMIT=2048M #optional
+      - TZ=${TZ}
+      - MEM_LIMIT=1024
+      - MEM_STARTUP=1024
     volumes:
       - ${DATADIR}/unifi-controller:/config
     ports:
@@ -48,6 +50,41 @@ services:
       - 5514:5514
     labels:
       - 'wud.tag.include=^\d+\.\d+\.\d+$$'
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://localhost:3100/loki/api/v1/push"
+        max-size: "200m"
+
+  loki:
+    container_name: loki
+    image: grafana/loki:main
+    restart: always
+    ports:
+      - 3100:3100
+    volumes:
+      - ${DATADIR}/loki/config:/etc/loki
+      - ${DATADIR}/loki/data:/data/loki
+    command: "--config.file=/etc/loki/loki-config.yaml"
+    labels:
+      - 'wud.tag.include=main'
+      - 'wud.watch.digest=true'
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://localhost:3100/loki/api/v1/push"
+        max-size: "200m"
+
+  whatsupdocker:
+    image: fmartinou/whats-up-docker:6.0.1
+    container_name: wud
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 3001:3000
+    labels:
+      - 'wud.tag.include=^\d+\.\d+\.\d+$$'
+      - 'wud.link.template=https://github.com/fmartinou/whats-up-docker/releases/tag/$${major}.$${minor}.$${patch}'
     logging:
       driver: loki
       options:
